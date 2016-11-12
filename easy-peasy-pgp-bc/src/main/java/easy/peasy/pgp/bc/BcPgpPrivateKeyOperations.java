@@ -116,7 +116,7 @@ public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
 			PGPPrivateKey privateKey = keyRing.extractPrivateKey(secretKey);
 
 			PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(
-					new JcaPGPContentSignerBuilder(secretKey.getPublicKey().getAlgorithm(), PGPUtil.SHA1).setProvider(BouncyCastleProvider.PROVIDER_NAME));
+					new JcaPGPContentSignerBuilder(secretKey.getPublicKey().getAlgorithm(), PGPUtil.SHA256).setProvider(BouncyCastleProvider.PROVIDER_NAME));
 			signatureGenerator.init(PGPSignature.BINARY_DOCUMENT, privateKey);
 
 			Iterator<String> userIdIterator = secretKey.getPublicKey().getUserIDs();

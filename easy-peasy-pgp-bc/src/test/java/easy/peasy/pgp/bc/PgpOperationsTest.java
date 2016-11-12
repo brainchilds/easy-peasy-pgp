@@ -31,7 +31,7 @@ public class PgpOperationsTest {
 		ByteArrayOutputStream publicKeyOut = new ByteArrayOutputStream();
 		ByteArrayOutputStream privateKeyOut = new ByteArrayOutputStream();
 		final String password = "password";
-		keyPairFactory.createKeyPair("user", publicKeyOut, privateKeyOut, password);
+		keyPairFactory.createKeyPair("user", password, publicKeyOut, privateKeyOut);
 
 		publicKeyOperations = new BcPgpPublicKeyOperations(new PublicKeyRing(new ByteArrayInputStream(publicKeyOut.toByteArray())));
 		privateKeyOperations = new BcPgpPrivateKeyOperations(new PrivateKeyRing(new ByteArrayInputStream(privateKeyOut.toByteArray()), password));

@@ -215,7 +215,7 @@ class CommandLineHandler {
 				Path publicKeyOutputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_PUBLIC_KEY));
 				String password = commandLine.getOptionValue(OPTION_NAME_PASSWORD);
 				BcPgpKeyPairGenerator keyPairGenerator = new BcPgpKeyPairGenerator();
-				keyPairGenerator.createKeyPair("user", new FileOutputStream(publicKeyOutputFile.toFile()), new FileOutputStream(privateKeyOutputFile.toFile()), password);
+				keyPairGenerator.createKeyPair("user", password, publicKeyOutputFile, privateKeyOutputFile);
 			} catch (Exception e) {
 				printException(COMMAND_CREATE_KEY_PAIR, REQUIRED_OPTIONS_CREATE_KEY_PAIR, e);
 				return 1;
@@ -227,7 +227,10 @@ class CommandLineHandler {
 	private Path resolveFile(String fileName) throws IOException {
 		try {
 			Path privateKeyOutputFile = Paths.get(fileName);
-			Files.createDirectories(privateKeyOutputFile.getParent());
+			Path parentDir = privateKeyOutputFile.getParent();
+			if (!Files.exists(parentDir)) {
+				Files.createDirectories(parentDir);
+			}
 			return privateKeyOutputFile;
 		} catch (Exception e) {
 			String msg = "Filename " + fileName;

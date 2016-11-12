@@ -13,6 +13,8 @@ import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
+import easy.peasy.pgp.api.exceptions.PgpException;
+
 @Data
 public class PublicKeyRing {
 	private final PGPPublicKeyRingCollection keyRingCollection;
@@ -21,11 +23,15 @@ public class PublicKeyRing {
 		this.keyRingCollection = keyRingCollection;
 	}
 
-	public PublicKeyRing(InputStream publicKeyIn) throws IOException, PGPException {
-		this.keyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(publicKeyIn), new JcaKeyFingerprintCalculator());
+	public PublicKeyRing(InputStream publicKeyIn) throws IOException, PgpException {
+		try {
+			this.keyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(publicKeyIn), new JcaKeyFingerprintCalculator());
+		} catch (PGPException e) {
+			throw new PgpException(e);
+		}
 	}
 
-	public PGPPublicKey getFirstKey() throws PGPException {
+	public PGPPublicKey getFirstKey() throws PgpException {
 		Iterator<PGPPublicKeyRing> keyRingIterator = keyRingCollection.getKeyRings();
 		while (keyRingIterator.hasNext()) {
 			PGPPublicKeyRing keyRing = keyRingIterator.next();
@@ -37,11 +43,15 @@ public class PublicKeyRing {
 				}
 			}
 		}
-		throw new PGPException("Given key ring does not contain any public encryption key");
+		throw new PgpException("Given key ring does not contain any public encryption key");
 	}
 
-	public PGPPublicKey getKeyById(long keyId) throws PGPException {
-		return keyRingCollection.getPublicKey(keyId);
+	public PGPPublicKey getKeyById(long keyId) throws PgpException {
+		try {
+			return keyRingCollection.getPublicKey(keyId);
+		} catch (PGPException e) {
+			throw new PgpException(e);
+		}
 	}
 
 }

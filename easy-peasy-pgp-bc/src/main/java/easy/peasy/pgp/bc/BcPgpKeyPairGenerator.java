@@ -6,10 +6,12 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.util.Date;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
 
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
@@ -29,17 +31,40 @@ import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 import easy.peasy.pgp.api.exceptions.PgpException;
 import easy.peasy.pgp.api.keys.PgpKeyPairGenerator;
 
-@AllArgsConstructor
-@NoArgsConstructor
+@Data
 public class BcPgpKeyPairGenerator implements PgpKeyPairGenerator {
-	private int keySize = 2048;
-	private boolean asciiArmor = true;
+	private final int keySize;
+	private final boolean asciiArmor;
+	@Getter(AccessLevel.NONE)
+	private final KeyPairGenerator keyPairGenerator;
 
-	public long createKeyPair(String userId, OutputStream publicKeyOut, OutputStream privateKeyOut, String privateKeyPassword) throws IOException, NoSuchProviderException,
-			NoSuchAlgorithmException, PgpException {
+	static {
+		if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+			Security.addProvider(new BouncyCastleProvider());
+		}
+	}
+
+	public BcPgpKeyPairGenerator() {
+		this(2048, true);
+	}
+
+	public BcPgpKeyPairGenerator(int keySize, boolean asciiArmor) {
+		this.keySize = keySize;
+		this.asciiArmor = asciiArmor;
 		try {
-			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
+			this.keyPairGenerator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 			keyPairGenerator.initialize(keySize);
+		} catch (NoSuchAlgorithmException e) {
+			// every Java platform has to support RSA (1024, 2048)
+			throw new IllegalStateException("RSA algorithm not supported", e);
+		} catch (NoSuchProviderException e) {
+			// bouncy castle provider was added in static init block
+			throw new IllegalStateException(BouncyCastleProvider.PROVIDER_NAME + " provider not registered", e);
+		}
+	}
+
+	public long createKeyPair(String userId, OutputStream publicKeyOut, OutputStream privateKeyOut, String password) throws IOException, PgpException {
+		try {
 			KeyPair rsaKeyPair = keyPairGenerator.generateKeyPair();
 
 			// only sha1 supported for keys
@@ -47,7 +72,7 @@ public class BcPgpKeyPairGenerator implements PgpKeyPairGenerator {
 			PGPKeyPair pgpKeyPair = new JcaPGPKeyPair(PGPPublicKey.RSA_GENERAL, rsaKeyPair, new Date());
 			PGPSecretKey pgpSecretKey = new PGPSecretKey(PGPSignature.DEFAULT_CERTIFICATION, pgpKeyPair, userId, digestCalculator, null, null, new JcaPGPContentSignerBuilder(
 					pgpKeyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), new JcePBESecretKeyEncryptorBuilder(PGPEncryptedData.CAST5, digestCalculator).setProvider(
-					BouncyCastleProvider.PROVIDER_NAME).build(privateKeyPassword.toCharArray()));
+					BouncyCastleProvider.PROVIDER_NAME).build(password.toCharArray()));
 
 			if (asciiArmor) {
 				privateKeyOut = new ArmoredOutputStream(privateKeyOut);

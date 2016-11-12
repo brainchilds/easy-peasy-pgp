@@ -64,7 +64,7 @@ public class PrivateKeyRing {
 	}
 
 	public PGPPrivateKey getFirstPrivateKey() throws PgpException {
-		return getPrivateKey(getFirstSecretKey());
+		return extractPrivateKey(getFirstSecretKey());
 	}
 
 	public PGPPrivateKey getKeyById(long keyId) throws PgpException {
@@ -73,13 +73,13 @@ public class PrivateKeyRing {
 			if (secretKey == null) {
 				return null;
 			}
-			return getPrivateKey(secretKey);
+			return extractPrivateKey(secretKey);
 		} catch (PGPException e) {
 			throw new PgpException(e);
 		}
 	}
 
-	public PGPPrivateKey getPrivateKey(PGPSecretKey secretKey) throws PgpException {
+	public PGPPrivateKey extractPrivateKey(PGPSecretKey secretKey) throws PgpException {
 		try {
 			return secretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(password));
 		} catch (PGPException e) {

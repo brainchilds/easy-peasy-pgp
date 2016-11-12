@@ -1,6 +1,6 @@
 package easy.peasy.pgp.cli;
 
-import static easy.peasy.pgp.cli.Constants.COMMAND_CREATE_KEY_PAIR;
+import static easy.peasy.pgp.cli.Constants.*;
 import static easy.peasy.pgp.cli.Constants.COMMAND_DECRYPT;
 import static easy.peasy.pgp.cli.Constants.COMMAND_ENCRYPT;
 import static easy.peasy.pgp.cli.Constants.COMMAND_SIGN;
@@ -94,7 +94,7 @@ public class CommandLineInterfaceIT {
 	}
 
 	@Test
-	public void encryptAndDecryptTest() throws Exception {
+	public void encryptAndDecrypt() throws Exception {
 		Path testWorkingDir = workingDirPath.resolve("encryptAndDecryptTest");
 		Path publicKeyPath = testWorkingDir.resolve("public.asc");
 		Path privateKeyPath = testWorkingDir.resolve("private.asc");
@@ -108,7 +108,7 @@ public class CommandLineInterfaceIT {
 	}
 
 	@Test
-	public void signAndVerifyTest() throws Exception {
+	public void signAndVerify() throws Exception {
 		Path testWorkingDir = workingDirPath.resolve("signAndVerifyTest");
 		Path publicKeyPath = testWorkingDir.resolve("public.asc");
 		Path privateKeyPath = testWorkingDir.resolve("private.asc");
@@ -116,23 +116,45 @@ public class CommandLineInterfaceIT {
 		Path verified = testWorkingDir.resolve("verified-payload.txt");
 
 		createKeyPair(publicKeyPath, privateKeyPath);
-		sign(privateKeyPath, samplePayload, signed);
-		verify(publicKeyPath, signed, verified);
+		sign(privateKeyPath, samplePayload, signed, false);
+		verify(publicKeyPath, signed, verified, false);
 		comparePayloads(verified);
 	}
 
-	private void verify(Path publicKeyPath, Path signed, Path verified) throws ExecuteException, IOException {
-		String line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_VERIFY).appendOption(OPTION_PUBLIC_KEY, publicKeyPath).appendOption(OPTION_FILE_IN, signed)
-				.appendOption(OPTION_FILE_OUT, verified).toString();
+	@Test
+	public void signAndVerifyWithDetachedSignature() throws Exception {
+		Path testWorkingDir = workingDirPath.resolve("signAndVerifyTest");
+		Path publicKeyPath = testWorkingDir.resolve("public.asc");
+		Path privateKeyPath = testWorkingDir.resolve("private.asc");
+		Path signature = testWorkingDir.resolve("signature.asc");
+
+		createKeyPair(publicKeyPath, privateKeyPath);
+		sign(privateKeyPath, samplePayload, signature, true);
+		verify(publicKeyPath, samplePayload, signature, true);
+	}
+
+	private void verify(Path publicKeyPath, Path signed, Path verified, boolean detached) throws ExecuteException, IOException {
+		String line;
+		if (detached) {
+			line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_VERIFY).appendOption(OPTION_PUBLIC_KEY, publicKeyPath).appendOption(OPTION_FILE_IN, signed)
+					.appendOption(OPTION_SIGNATURE_IN, verified).appendOption(OPTION_VERBOSE).toString();
+		} else {
+			line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_VERIFY).appendOption(OPTION_PUBLIC_KEY, publicKeyPath).appendOption(OPTION_FILE_IN, signed)
+					.appendOption(OPTION_FILE_OUT, verified).appendOption(OPTION_VERBOSE).toString();
+		}
 		CommandLine cmdLine = CommandLine.parse(line);
 		int exitValue = executor.execute(cmdLine);
 		assertEquals(0, exitValue);
 		assertTrue(Files.exists(verified));
 	}
 
-	private void sign(Path privateKeyPath, Path plain, Path signed) throws ExecuteException, IOException {
-		String line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_SIGN).appendOption(OPTION_PRIVATE_KEY, privateKeyPath).appendOption(OPTION_PASSWORD, "password")
-				.appendOption(OPTION_FILE_IN, plain).appendOption(OPTION_FILE_OUT, signed).toString();
+	private void sign(Path privateKeyPath, Path plain, Path signed, boolean detached) throws ExecuteException, IOException {
+		CommandLineBuilder builder = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_SIGN).appendOption(OPTION_PRIVATE_KEY, privateKeyPath)
+				.appendOption(OPTION_PASSWORD, "password").appendOption(OPTION_FILE_IN, plain).appendOption(OPTION_FILE_OUT, signed).appendOption(OPTION_VERBOSE);
+		if (detached) {
+			builder.appendOption(OPTION_DETACHED_SIGNATURE);
+		}
+		String line = builder.toString();
 		CommandLine cmdLine = CommandLine.parse(line);
 		int exitValue = executor.execute(cmdLine);
 		assertEquals(0, exitValue);
@@ -149,7 +171,7 @@ public class CommandLineInterfaceIT {
 
 	private void decrypt(Path privateKeyPath, Path encrypted, Path decrypted) throws ExecuteException, IOException {
 		String line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_DECRYPT).appendOption(OPTION_PRIVATE_KEY, privateKeyPath).appendOption(OPTION_PASSWORD, "password")
-				.appendOption(OPTION_FILE_IN, encrypted).appendOption(OPTION_FILE_OUT, decrypted).toString();
+				.appendOption(OPTION_FILE_IN, encrypted).appendOption(OPTION_FILE_OUT, decrypted).appendOption(OPTION_VERBOSE).toString();
 		CommandLine cmdLine = CommandLine.parse(line);
 		int exitValue = executor.execute(cmdLine);
 		assertEquals(0, exitValue);
@@ -158,7 +180,7 @@ public class CommandLineInterfaceIT {
 
 	private void encrypt(Path publicKeyPath, Path plain, Path encrypted) throws ExecuteException, IOException {
 		String line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_ENCRYPT).appendOption(OPTION_PUBLIC_KEY, publicKeyPath).appendOption(OPTION_FILE_IN, plain)
-				.appendOption(OPTION_FILE_OUT, encrypted).toString();
+				.appendOption(OPTION_FILE_OUT, encrypted).appendOption(OPTION_VERBOSE).toString();
 		CommandLine cmdLine = CommandLine.parse(line);
 		int exitValue = executor.execute(cmdLine);
 		assertEquals(0, exitValue);
@@ -167,7 +189,7 @@ public class CommandLineInterfaceIT {
 
 	private void createKeyPair(Path publicKeyPath, Path privateKeyPath) throws ExecuteException, IOException {
 		String line = new CommandLineBuilder("sh ", ".sh").appendOption(COMMAND_CREATE_KEY_PAIR).appendOption(OPTION_PUBLIC_KEY, publicKeyPath)
-				.appendOption(OPTION_PRIVATE_KEY, privateKeyPath).appendOption(OPTION_PASSWORD, "password").toString();
+				.appendOption(OPTION_PRIVATE_KEY, privateKeyPath).appendOption(OPTION_PASSWORD, "password").appendOption(OPTION_VERBOSE).toString();
 		CommandLine cmdLine = CommandLine.parse(line);
 		int exitValue = executor.execute(cmdLine);
 		assertEquals(0, exitValue);

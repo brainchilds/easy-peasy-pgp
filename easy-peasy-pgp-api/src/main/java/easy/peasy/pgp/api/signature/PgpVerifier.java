@@ -10,4 +10,6 @@ public interface PgpVerifier {
 
 	boolean verify(InputStream signedIn, OutputStream plainOut) throws IOException, PgpException;
 
+	boolean verify(InputStream plainIn, InputStream signatureIn) throws IOException, PgpException;
+
 }

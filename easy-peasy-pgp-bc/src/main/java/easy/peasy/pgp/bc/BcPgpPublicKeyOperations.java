@@ -1,16 +1,14 @@
 package easy.peasy.pgp.bc;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
 import java.util.Date;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
-import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
@@ -23,8 +21,8 @@ import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
 import org.bouncycastle.openpgp.PGPOnePassSignature;
 import org.bouncycastle.openpgp.PGPOnePassSignatureList;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
-import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
@@ -35,21 +33,25 @@ import easy.peasy.pgp.api.PgpPublicKeyOperations;
 import easy.peasy.pgp.api.exceptions.PgpException;
 
 @Data
-@AllArgsConstructor
+@Builder
 public class BcPgpPublicKeyOperations implements PgpPublicKeyOperations {
 
 	private final PublicKeyRing keyRing;
-	private final boolean asciiArmor;
-	private final boolean integrityCheck;
-	private final int bufferSize;
-	private final boolean zipCompression;
+	private final Boolean asciiArmor;
+	private final Boolean integrityCheck;
+	private final Boolean zipCompression;
+	private final Integer bufferSize;
 
 	public BcPgpPublicKeyOperations(PublicKeyRing keyRing) {
+		this(keyRing, null, null, null, null);
+	}
+
+	public BcPgpPublicKeyOperations(PublicKeyRing keyRing, Boolean asciiArmor, Boolean integrityCheck, Boolean zipCompression, Integer bufferSize) {
 		this.keyRing = keyRing;
-		this.asciiArmor = true;
-		this.integrityCheck = true;
-		this.bufferSize = 64;
-		this.zipCompression = true;
+		this.asciiArmor = asciiArmor != null ? asciiArmor : true;
+		this.integrityCheck = integrityCheck != null ? integrityCheck : true;
+		this.zipCompression = zipCompression != null ? zipCompression : true;
+		this.bufferSize = bufferSize != null ? bufferSize : Integer.valueOf(64);
 	}
 
 	@Override
@@ -64,9 +66,9 @@ public class BcPgpPublicKeyOperations implements PgpPublicKeyOperations {
 
 	private void doEncrypt(Long keyId, InputStream plainIn, OutputStream encryptedOut) throws IOException, PgpException {
 		try {
-			if (asciiArmor) {
-				encryptedOut = new ArmoredOutputStream(encryptedOut);
-			}
+			plainIn = StreamWrapperUtils.wrap(plainIn, false);
+			encryptedOut = StreamWrapperUtils.wrap(encryptedOut, this.asciiArmor);
+
 			PGPEncryptedDataGenerator encryptedDataGenerator = new PGPEncryptedDataGenerator(new JcePGPDataEncryptorBuilder(PGPEncryptedData.CAST5)
 					.setWithIntegrityPacket(integrityCheck).setSecureRandom(new SecureRandom()).setProvider(BouncyCastleProvider.PROVIDER_NAME));
 			PGPPublicKey publicKey = keyId != null ? keyRing.getKeyById(keyId) : keyRing.getFirstKey();
@@ -95,7 +97,8 @@ public class BcPgpPublicKeyOperations implements PgpPublicKeyOperations {
 	@Override
 	public boolean verify(InputStream signedIn, OutputStream plainOut) throws IOException, PgpException {
 		try {
-			signedIn = PGPUtil.getDecoderStream(signedIn);
+			signedIn = StreamWrapperUtils.wrap(signedIn, true);
+			plainOut = StreamWrapperUtils.wrap(plainOut, false);
 
 			JcaPGPObjectFactory objectFactory = new JcaPGPObjectFactory(signedIn);
 			Object pgpObject = objectFactory.nextObject();
@@ -113,15 +116,40 @@ public class BcPgpPublicKeyOperations implements PgpPublicKeyOperations {
 			PGPPublicKey publicKey = keyRing.getKeyById(signature.getKeyID());
 			signature.init(new JcaPGPContentVerifierBuilderProvider().setProvider(BouncyCastleProvider.PROVIDER_NAME), publicKey);
 
-			if (!(literalDataIn instanceof BufferedInputStream)) {
-				literalDataIn = new BufferedInputStream(literalDataIn, bufferSize);
-			}
+			literalDataIn = StreamWrapperUtils.wrap(literalDataIn, false);
 
 			readSignedData(plainOut, signature, literalDataIn);
-
 			plainOut.close();
 			PGPSignatureList signatureList = (PGPSignatureList) objectFactory.nextObject();
 			return signature.verify(signatureList.get(0));
+		} catch (PGPException e) {
+			throw new PgpException("Failed to verify signature", e);
+		}
+	}
+
+	@Override
+	public boolean verify(InputStream plainIn, InputStream signatureIn) throws IOException, PgpException {
+		try {
+			plainIn = StreamWrapperUtils.wrap(plainIn, false);
+			signatureIn = StreamWrapperUtils.wrap(signatureIn, true);
+
+			JcaPGPObjectFactory objectFactory = new JcaPGPObjectFactory(signatureIn);
+			Object pgpObject = objectFactory.nextObject();
+
+			if (pgpObject instanceof PGPCompressedData) {
+				PGPCompressedData compressedData = (PGPCompressedData) pgpObject;
+				objectFactory = new JcaPGPObjectFactory(compressedData.getDataStream());
+				pgpObject = objectFactory.nextObject();
+			}
+
+			PGPSignatureList signatureList = (PGPSignatureList) pgpObject;
+			PGPSignature signature = signatureList.get(0);
+			PGPPublicKey publicKey = keyRing.getKeyById(signature.getKeyID());
+			signature.init(new JcaPGPContentVerifierBuilderProvider().setProvider(BouncyCastleProvider.PROVIDER_NAME), publicKey);
+
+			readSignature(signature, plainIn);
+
+			return signature.verify();
 		} catch (PGPException e) {
 			throw new PgpException("Failed to verify signature", e);
 		}
@@ -132,6 +160,13 @@ public class BcPgpPublicKeyOperations implements PgpPublicKeyOperations {
 		while ((nextByte = literalDataIn.read()) >= 0) {
 			signature.update((byte) nextByte);
 			plainOut.write(nextByte);
+		}
+	}
+
+	private void readSignature(PGPSignature signature, InputStream signedIn) throws IOException {
+		int nextByte;
+		while ((nextByte = signedIn.read()) >= 0) {
+			signature.update((byte) nextByte);
 		}
 	}
 

@@ -11,6 +11,8 @@ class Constants {
 	public static final String OPTION_NAME_PUBLIC_KEY = "publicKey";
 	public static final String OPTION_NAME_FILE_OUT = "fileOut";
 	public static final String OPTION_NAME_FILE_IN = "fileIn";
+	public static final String OPTION_NAME_SIGNATURE_IN = "signatureIn";
+	public static final String OPTION_NAME_DETACHED_SIGNATURE = "detached";
 	public static final String OPTION_NAME_PASSWORD = "password";
 	public static final String OPTION_NAME_VERBOSE = "verbose";
 	public static final String OPTION_NAME_HELP = "help";
@@ -32,6 +34,8 @@ class Constants {
 	protected static final Option OPTION_PUBLIC_KEY = Option.builder("puKey").longOpt(OPTION_NAME_PUBLIC_KEY).desc("The public key file").hasArg().required(false).build();
 	protected static final Option OPTION_FILE_OUT = Option.builder(OPTION_NAME_FILE_OUT).desc("The output file").hasArg().required(false).build();
 	protected static final Option OPTION_FILE_IN = Option.builder(OPTION_NAME_FILE_IN).desc("The input file").hasArg().required(false).build();
+	protected static final Option OPTION_SIGNATURE_IN = Option.builder("sigIn").longOpt(OPTION_NAME_SIGNATURE_IN).desc("The detached signature input file").hasArg().required(false).build();
+	protected static final Option OPTION_DETACHED_SIGNATURE = Option.builder(OPTION_NAME_DETACHED_SIGNATURE).longOpt(OPTION_NAME_DETACHED_SIGNATURE).desc("If the signature shall be detached").hasArg(false).required(false).build();
 	protected static final Option OPTION_PASSWORD = Option.builder("pw").longOpt(OPTION_NAME_PASSWORD).argName(OPTION_NAME_PASSWORD).desc("The password for the given private key")
 			.hasArg().required(false).build();
 	protected static final Option OPTION_VERBOSE = Option.builder(OPTION_NAME_VERBOSE).longOpt(OPTION_NAME_VERBOSE).desc("Enable verbose output").hasArg(false).required(false)
@@ -57,6 +61,8 @@ class Constants {
 		ALL_OPTIONS.addOption(OPTION_FILE_OUT);
 		ALL_OPTIONS.addOption(OPTION_PRIVATE_KEY);
 		ALL_OPTIONS.addOption(OPTION_PUBLIC_KEY);
+		ALL_OPTIONS.addOption(OPTION_DETACHED_SIGNATURE);
+		ALL_OPTIONS.addOption(OPTION_SIGNATURE_IN);
 		ALL_OPTIONS.addOption(OPTION_VERBOSE);
 		ALL_OPTIONS.addOption(OPTION_HELP);
 		ALL_OPTIONS.addOption(OPTION_VERSION);
@@ -69,8 +75,8 @@ class Constants {
 		FIRST_CLASS_OPTIONS.addOption(OPTION_VERSION);
 	}
 
-	protected static final Option[] REQUIRED_OPTIONS_VERIFY = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PUBLIC_KEY };
-	protected static final Option[] REQUIRED_OPTIONS_SIGN = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PRIVATE_KEY, OPTION_PASSWORD };
+	protected static final Option[] REQUIRED_OPTIONS_VERIFY = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PUBLIC_KEY, OPTION_SIGNATURE_IN };
+	protected static final Option[] REQUIRED_OPTIONS_SIGN = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PRIVATE_KEY, OPTION_PASSWORD, OPTION_DETACHED_SIGNATURE };
 	protected static final Option[] REQUIRED_OPTIONS_DECRYPT = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PRIVATE_KEY, OPTION_PASSWORD };
 	protected static final Option[] REQUIRED_OPTIONS_ENCRYPT = { OPTION_FILE_IN, OPTION_FILE_OUT, OPTION_PUBLIC_KEY };
 	protected static final Option[] REQUIRED_OPTIONS_CREATE_KEY_PAIR = { OPTION_PUBLIC_KEY, OPTION_PRIVATE_KEY, OPTION_PASSWORD };

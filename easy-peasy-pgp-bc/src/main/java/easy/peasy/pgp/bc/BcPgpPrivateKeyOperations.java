@@ -1,16 +1,14 @@
 package easy.peasy.pgp.bc;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.Iterator;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
-import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.BCPGOutputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
@@ -36,24 +34,31 @@ import easy.peasy.pgp.api.PgpPrivateKeyOperations;
 import easy.peasy.pgp.api.exceptions.PgpException;
 
 @Data
-@AllArgsConstructor
+@Builder
 public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
 
 	private final PrivateKeyRing keyRing;
-	private final boolean asciiArmor;
-	private final int bufferSize;
+	private final Boolean asciiArmor;
+	private final Boolean detachedSignature;
+	private final Integer bufferSize;
 
 	public BcPgpPrivateKeyOperations(PrivateKeyRing keyRing) {
+		this(keyRing, null, null, null);
+	}
+
+	public BcPgpPrivateKeyOperations(PrivateKeyRing keyRing, Boolean asciiArmor, Boolean detachedSignature, Integer bufferSize) {
 		this.keyRing = keyRing;
-		this.asciiArmor = true;
-		this.bufferSize = 64;
+		this.asciiArmor = asciiArmor != null ? asciiArmor : Boolean.TRUE;
+		this.detachedSignature = detachedSignature != null ? detachedSignature : Boolean.FALSE;
+		this.bufferSize = bufferSize != null ? bufferSize : Integer.valueOf(64);
 	}
 
 	@Override
 	@SuppressWarnings({ "unchecked" })
 	public void decrypt(InputStream encryptedIn, OutputStream decryptedOut) throws IOException, PgpException {
 		try {
-			encryptedIn = PGPUtil.getDecoderStream(encryptedIn);
+			encryptedIn = StreamWrapperUtils.wrap(encryptedIn, true);
+			decryptedOut = StreamWrapperUtils.wrap(decryptedOut, false);
 
 			JcaPGPObjectFactory objectFactory = new JcaPGPObjectFactory(encryptedIn);
 			PGPEncryptedDataList encryptedDataList = extractEncryptedDataList(objectFactory);
@@ -104,9 +109,8 @@ public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
 	@SuppressWarnings("unchecked")
 	private void doSign(Long keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException {
 		try {
-			if (asciiArmor) {
-				signedOut = new ArmoredOutputStream(signedOut);
-			}
+			plainIn = StreamWrapperUtils.wrap(plainIn, false);
+			signedOut = StreamWrapperUtils.wrap(signedOut, this.asciiArmor);
 
 			PGPSecretKey secretKey = keyId != null ? keyRing.getSecretKeyById(keyId) : keyRing.getFirstSecretKey();
 			PGPPrivateKey privateKey = keyRing.extractPrivateKey(secretKey);
@@ -123,19 +127,27 @@ public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
 				signatureGenerator.setHashedSubpackets(signatureSubpacketGenerator.generate());
 			}
 
-			PGPCompressedDataGenerator compressedDataGenerator = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
-			BCPGOutputStream bcOut = new BCPGOutputStream(compressedDataGenerator.open(signedOut));
-			signatureGenerator.generateOnePassVersion(false).encode(bcOut);
+			if (detachedSignature) {
+				BCPGOutputStream bcOut = new BCPGOutputStream(signedOut);
+				writeSignature(plainIn, signatureGenerator);
 
-			PGPLiteralDataGenerator literalDataGenerator = new PGPLiteralDataGenerator();
-			OutputStream literalDataGeneratorOut = literalDataGenerator.open(bcOut, PGPLiteralData.BINARY, "unknown", new Date(), new byte[bufferSize]);
+				signatureGenerator.generate().encode(bcOut);
+				signedOut.close();
+			} else {
+				PGPCompressedDataGenerator compressedDataGenerator = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
+				BCPGOutputStream bcOut = new BCPGOutputStream(compressedDataGenerator.open(signedOut));
+				signatureGenerator.generateOnePassVersion(false).encode(bcOut);
+				PGPLiteralDataGenerator literalDataGenerator = new PGPLiteralDataGenerator();
+				OutputStream literalDataGeneratorOut = literalDataGenerator.open(bcOut, PGPLiteralData.BINARY, "unknown", new Date(), new byte[bufferSize]);
 
-			writeSignedData(plainIn, signatureGenerator, literalDataGeneratorOut);
+				writeSignedData(plainIn, signatureGenerator, literalDataGeneratorOut);
 
-			literalDataGenerator.close();
-			signatureGenerator.generate().encode(bcOut);
-			compressedDataGenerator.close();
-			signedOut.close();
+				literalDataGenerator.close();
+				signatureGenerator.generate().encode(bcOut);
+				compressedDataGenerator.close();
+				signedOut.close();
+			}
+
 		} catch (PGPException e) {
 			throw new PgpException("Failed to sign data", e);
 		}
@@ -143,12 +155,16 @@ public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
 	}
 
 	private void writeSignedData(InputStream plainIn, PGPSignatureGenerator signatureGenerator, OutputStream literalDataGeneratorOut) throws IOException {
-		if (!(plainIn instanceof BufferedInputStream)) {
-			plainIn = new BufferedInputStream(plainIn, bufferSize);
-		}
 		int nextByte;
 		while ((nextByte = plainIn.read()) >= 0) {
 			literalDataGeneratorOut.write(nextByte);
+			signatureGenerator.update((byte) nextByte);
+		}
+	}
+
+	private void writeSignature(InputStream plainIn, PGPSignatureGenerator signatureGenerator) throws IOException {
+		int nextByte;
+		while ((nextByte = plainIn.read()) >= 0) {
 			signatureGenerator.update((byte) nextByte);
 		}
 	}

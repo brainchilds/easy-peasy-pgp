@@ -33,12 +33,16 @@ public class PgpOperationsTest {
 		final String password = "password";
 		keyPairFactory.createKeyPair("user", password, publicKeyOut, privateKeyOut);
 
-		publicKeyOperations = new BcPgpPublicKeyOperations(new PublicKeyRing(new ByteArrayInputStream(publicKeyOut.toByteArray())));
-		privateKeyOperations = new BcPgpPrivateKeyOperations(new PrivateKeyRing(new ByteArrayInputStream(privateKeyOut.toByteArray()), password));
+		publicKeyRing = new PublicKeyRing(new ByteArrayInputStream(publicKeyOut.toByteArray()));
+		publicKeyOperations = new BcPgpPublicKeyOperations(publicKeyRing);
+		privateKeyRing = new PrivateKeyRing(new ByteArrayInputStream(privateKeyOut.toByteArray()), password);
+		privateKeyOperations = new BcPgpPrivateKeyOperations(privateKeyRing);
 	}
 
 	private PgpPublicKeyOperations publicKeyOperations;
 	private PgpPrivateKeyOperations privateKeyOperations;
+	private PublicKeyRing publicKeyRing;
+	private PrivateKeyRing privateKeyRing;
 
 	@Test
 	public void encryptAndDecrypt() throws Exception {
@@ -65,6 +69,19 @@ public class PgpOperationsTest {
 
 		assertTrue(signatureVerified);
 		assertTrue(Arrays.equals(samplePayload, plainOut.toByteArray()));
+	}
+
+	@Test
+	public void signAndVerifyWithDetachedSignature() throws Exception {
+		privateKeyOperations = BcPgpPrivateKeyOperations.builder().keyRing(privateKeyRing).detachedSignature(true).build();
+		byte[] samplePayload = getTestPayload();
+
+		ByteArrayOutputStream signatureOut = new ByteArrayOutputStream();
+		privateKeyOperations.sign(new ByteArrayInputStream(samplePayload), signatureOut);
+
+		boolean signatureVerified = publicKeyOperations.verify(new ByteArrayInputStream(samplePayload), new ByteArrayInputStream(signatureOut.toByteArray()));
+
+		assertTrue(signatureVerified);
 	}
 
 	private static byte[] getTestPayload() throws IOException {

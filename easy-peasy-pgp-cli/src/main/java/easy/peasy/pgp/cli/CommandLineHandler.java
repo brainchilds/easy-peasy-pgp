@@ -14,12 +14,14 @@ import static easy.peasy.pgp.cli.Constants.COMMAND_SIGN;
 import static easy.peasy.pgp.cli.Constants.COMMAND_VERIFY;
 import static easy.peasy.pgp.cli.Constants.FIRST_CLASS_OPTIONS;
 import static easy.peasy.pgp.cli.Constants.OPTION_HELP;
+import static easy.peasy.pgp.cli.Constants.OPTION_NAME_DETACHED_SIGNATURE;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_FILE_IN;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_FILE_OUT;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_HELP;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_PASSWORD;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_PRIVATE_KEY;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_PUBLIC_KEY;
+import static easy.peasy.pgp.cli.Constants.OPTION_NAME_SIGNATURE_IN;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_VERBOSE;
 import static easy.peasy.pgp.cli.Constants.OPTION_NAME_VERSION;
 import static easy.peasy.pgp.cli.Constants.OPTION_VERBOSE;
@@ -110,16 +112,26 @@ class CommandLineHandler {
 			printHelpForCommand(COMMAND_VERIFY, REQUIRED_OPTIONS_VERIFY);
 		} else {
 			try {
-				if (!hasRequiredOptions(REQUIRED_OPTIONS_VERIFY)) {
+				if (!commandLine.hasOption(OPTION_NAME_PUBLIC_KEY) || !commandLine.hasOption(OPTION_NAME_FILE_IN)) {
 					printException(COMMAND_VERIFY, REQUIRED_OPTIONS_VERIFY, new IllegalArgumentException("Missing requirement argument"));
 					return 1;
 				}
 
 				Path publicKeyFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_PUBLIC_KEY));
 				Path inputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_FILE_IN));
-				Path outputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_FILE_OUT));
+
 				BcPgpPublicKeyOperations encryptor = new BcPgpPublicKeyOperations(new PublicKeyRing(new FileInputStream(publicKeyFile.toFile())));
-				boolean verified = encryptor.verify(new FileInputStream(inputFile.toFile()), new FileOutputStream(outputFile.toFile()));
+				boolean verified = false;
+				if (commandLine.hasOption(OPTION_NAME_SIGNATURE_IN)) {
+					Path signatureFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_SIGNATURE_IN));
+					verified = encryptor.verify(new FileInputStream(inputFile.toFile()), new FileInputStream(signatureFile.toFile()));
+				} else if (commandLine.hasOption(OPTION_NAME_FILE_OUT)) {
+					Path outputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_FILE_OUT));
+					verified = encryptor.verify(new FileInputStream(inputFile.toFile()), new FileOutputStream(outputFile.toFile()));
+				} else {
+					printException(COMMAND_VERIFY, REQUIRED_OPTIONS_VERIFY, new IllegalArgumentException("Missing requirement argument"));
+					return 1;
+				}
 				if (verified) {
 					System.out.println("Verified signature");
 				} else {
@@ -138,7 +150,8 @@ class CommandLineHandler {
 			printHelpForCommand(COMMAND_SIGN, REQUIRED_OPTIONS_SIGN);
 		} else {
 			try {
-				if (!hasRequiredOptions(REQUIRED_OPTIONS_SIGN)) {
+				if (!commandLine.hasOption(OPTION_NAME_PRIVATE_KEY) || !commandLine.hasOption(OPTION_NAME_PASSWORD) || !commandLine.hasOption(OPTION_NAME_FILE_IN)
+						|| !commandLine.hasOption(OPTION_NAME_FILE_OUT)) {
 					printException(COMMAND_SIGN, REQUIRED_OPTIONS_SIGN, new IllegalArgumentException("Missing requirement argument"));
 					return 1;
 				}
@@ -146,7 +159,9 @@ class CommandLineHandler {
 				String password = commandLine.getOptionValue(OPTION_NAME_PASSWORD);
 				Path inputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_FILE_IN));
 				Path outputFile = resolveFile(commandLine.getOptionValue(OPTION_NAME_FILE_OUT));
-				BcPgpPrivateKeyOperations decryptor = new BcPgpPrivateKeyOperations(new PrivateKeyRing(new FileInputStream(privateKeyFile.toFile()), password));
+				boolean detached = commandLine.hasOption(OPTION_NAME_DETACHED_SIGNATURE);
+				BcPgpPrivateKeyOperations decryptor = BcPgpPrivateKeyOperations.builder().keyRing(new PrivateKeyRing(new FileInputStream(privateKeyFile.toFile()), password))
+						.detachedSignature(detached).build();
 				decryptor.sign(new FileInputStream(inputFile.toFile()), new FileOutputStream(outputFile.toFile()));
 			} catch (Exception e) {
 				printException(COMMAND_SIGN, REQUIRED_OPTIONS_SIGN, e);
@@ -161,7 +176,8 @@ class CommandLineHandler {
 			printHelpForCommand(COMMAND_DECRYPT, REQUIRED_OPTIONS_DECRYPT);
 		} else {
 			try {
-				if (!hasRequiredOptions(REQUIRED_OPTIONS_DECRYPT)) {
+				if (!commandLine.hasOption(OPTION_NAME_PRIVATE_KEY) || !commandLine.hasOption(OPTION_NAME_PASSWORD) || !commandLine.hasOption(OPTION_NAME_FILE_IN)
+						|| !commandLine.hasOption(OPTION_NAME_FILE_OUT)) {
 					printException(COMMAND_DECRYPT, REQUIRED_OPTIONS_DECRYPT, new IllegalArgumentException("Missing requirement argument"));
 					return 1;
 				}
@@ -185,7 +201,7 @@ class CommandLineHandler {
 			printHelpForCommand(COMMAND_ENCRYPT, REQUIRED_OPTIONS_ENCRYPT);
 		} else {
 			try {
-				if (!hasRequiredOptions(REQUIRED_OPTIONS_ENCRYPT)) {
+				if (!commandLine.hasOption(OPTION_NAME_PUBLIC_KEY) || !commandLine.hasOption(OPTION_NAME_FILE_IN) || !commandLine.hasOption(OPTION_NAME_FILE_OUT)) {
 					printException(COMMAND_ENCRYPT, REQUIRED_OPTIONS_ENCRYPT, new IllegalArgumentException("Missing requirement argument"));
 					return 1;
 				}
@@ -207,7 +223,7 @@ class CommandLineHandler {
 			printHelpForCommand(COMMAND_CREATE_KEY_PAIR, REQUIRED_OPTIONS_CREATE_KEY_PAIR);
 		} else {
 			try {
-				if (!hasRequiredOptions(REQUIRED_OPTIONS_CREATE_KEY_PAIR)) {
+				if (!commandLine.hasOption(OPTION_NAME_PRIVATE_KEY) || !commandLine.hasOption(OPTION_NAME_PUBLIC_KEY) || !commandLine.hasOption(OPTION_NAME_PASSWORD)) {
 					printException(COMMAND_CREATE_KEY_PAIR, REQUIRED_OPTIONS_CREATE_KEY_PAIR, new IllegalArgumentException("Missing requirement argument"));
 					return 1;
 				}
@@ -239,15 +255,6 @@ class CommandLineHandler {
 			}
 			throw new IOException(msg, e);
 		}
-	}
-
-	private boolean hasRequiredOptions(Option[] options) {
-		for (Option option : options) {
-			if (!this.commandLine.hasOption(option.getOpt())) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	private void printHelpForAllCommands() {

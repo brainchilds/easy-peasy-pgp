@@ -101,12 +101,12 @@ public class BcPgpPrivateKeyOperations implements PrivateKeyOperations {
 	}
 
 	@Override
-	public void sign(long keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException {
+	public void sign(String keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException {
 		doSign(keyId, plainIn, signedOut);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void doSign(Long keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException {
+	private void doSign(String keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException {
 		try {
 			plainIn = StreamWrapperUtils.wrap(plainIn, false);
 			signedOut = StreamWrapperUtils.wrap(signedOut, this.asciiArmor);

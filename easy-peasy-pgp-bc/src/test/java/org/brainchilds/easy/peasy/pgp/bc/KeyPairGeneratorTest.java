@@ -11,9 +11,6 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.brainchilds.easy.peasy.pgp.bc.BcPgpKeyPairGenerator;
-import org.brainchilds.easy.peasy.pgp.bc.PrivateKeyRing;
-import org.brainchilds.easy.peasy.pgp.bc.PublicKeyRing;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,7 +27,7 @@ public class KeyPairGeneratorTest {
 		ByteArrayOutputStream publicKeyOut = new ByteArrayOutputStream();
 		ByteArrayOutputStream privateKeyOut = new ByteArrayOutputStream();
 
-		long keyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyOut, privateKeyOut);
+		String keyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyOut, privateKeyOut);
 
 		publicKeyOut.close();
 		privateKeyOut.close();
@@ -56,13 +53,13 @@ public class KeyPairGeneratorTest {
 		assertFalse(Files.exists(privateKeyRingFile));
 		assertFalse(Files.exists(publicKeyRingFile));
 
-		long firstKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
+		String firstKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
 
 		// assert that key files exist
 		assertTrue(Files.exists(privateKeyRingFile));
 		assertTrue(Files.exists(publicKeyRingFile));
 
-		long secondKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
+		String secondKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
 
 		// assert that two distinct keys have been created
 		assertTrue(firstKeyPairId != secondKeyPairId);
@@ -90,7 +87,7 @@ public class KeyPairGeneratorTest {
 		assertFalse(Files.exists(privateKeyRingFile));
 		assertFalse(Files.exists(publicKeyRingFile));
 
-		long firstKeyPairId;
+		String firstKeyPairId;
 		try (FileOutputStream publicKeyOut = new FileOutputStream(publicKeyRingFile.toFile()); FileOutputStream privateKeyOut = new FileOutputStream(privateKeyRingFile.toFile())) {
 			firstKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyOut, privateKeyOut);
 		}
@@ -99,7 +96,7 @@ public class KeyPairGeneratorTest {
 		assertTrue(Files.exists(privateKeyRingFile));
 		assertTrue(Files.exists(publicKeyRingFile));
 
-		long secondKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
+		String secondKeyPairId = keyPairGenerator.createKeyPair("userId", "password", publicKeyRingFile, privateKeyRingFile);
 
 		// assert that two distinct keys have been created
 		assertTrue(firstKeyPairId != secondKeyPairId);

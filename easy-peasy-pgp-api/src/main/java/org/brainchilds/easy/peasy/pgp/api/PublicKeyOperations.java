@@ -10,7 +10,7 @@ public interface PublicKeyOperations {
 
 	void encrypt(InputStream plaiIn, OutputStream encryptedOut) throws IOException, PgpException;
 
-	void encrypt(long keyId, InputStream plaiIn, OutputStream encryptedOut) throws IOException, PgpException;
+	void encrypt(String keyId, InputStream plaiIn, OutputStream encryptedOut) throws IOException, PgpException;
 
 	boolean verify(InputStream signedIn, OutputStream plainOut) throws IOException, PgpException;
 

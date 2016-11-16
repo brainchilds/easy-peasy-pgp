@@ -59,11 +59,11 @@ public class BcPgpPublicKeyOperations implements PublicKeyOperations {
 	}
 
 	@Override
-	public void encrypt(long keyId, InputStream plainIn, OutputStream encryptedOut) throws IOException, PgpException {
-		doEncrypt(Long.valueOf(keyId), plainIn, encryptedOut);
+	public void encrypt(String keyId, InputStream plainIn, OutputStream encryptedOut) throws IOException, PgpException {
+		doEncrypt(keyId, plainIn, encryptedOut);
 	}
 
-	private void doEncrypt(Long keyId, InputStream plainIn, OutputStream encryptedOut) throws IOException, PgpException {
+	private void doEncrypt(String keyId, InputStream plainIn, OutputStream encryptedOut) throws IOException, PgpException {
 		try {
 			plainIn = StreamWrapperUtils.wrap(plainIn, false);
 			encryptedOut = StreamWrapperUtils.wrap(encryptedOut, this.asciiArmor);

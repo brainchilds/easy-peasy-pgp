@@ -53,4 +53,8 @@ public class PublicKeyRing {
 		}
 	}
 
+	public PGPPublicKey getKeyById(String keyId) throws PgpException {
+		return getKeyById(Long.parseUnsignedLong(keyId, 16));
+	}
+
 }

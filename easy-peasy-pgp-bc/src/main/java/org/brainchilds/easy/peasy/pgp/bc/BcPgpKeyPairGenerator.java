@@ -73,7 +73,7 @@ public class BcPgpKeyPairGenerator implements KeyPairOperations {
 	}
 
 	@Override
-	public long createKeyPair(String userId, String password, OutputStream publicKeyOut, OutputStream privateKeyOut) throws IOException, PgpException {
+	public String createKeyPair(String userId, String password, OutputStream publicKeyOut, OutputStream privateKeyOut) throws IOException, PgpException {
 		try {
 			PGPSecretKey pgpSecretKey = createSecretKey(userId, password);
 			writeSecretKey(pgpSecretKey, privateKeyOut);
@@ -81,14 +81,14 @@ public class BcPgpKeyPairGenerator implements KeyPairOperations {
 			PGPPublicKey pgpPublicKey = pgpSecretKey.getPublicKey();
 			writePublicKey(pgpPublicKey, publicKeyOut);
 
-			return pgpSecretKey.getKeyID();
+			return Long.toHexString(pgpSecretKey.getKeyID()).toUpperCase();
 		} catch (PGPException e) {
 			throw new PgpException(e);
 		}
 	}
 
 	@Override
-	public long createKeyPair(String userId, String password, Path publicKeyFile, Path privateKeyFile) throws IOException, PgpException {
+	public String createKeyPair(String userId, String password, Path publicKeyFile, Path privateKeyFile) throws IOException, PgpException {
 		try {
 			PGPSecretKey pgpSecretKey = createSecretKey(userId, password);
 			if (Files.exists(privateKeyFile)) {
@@ -115,7 +115,7 @@ public class BcPgpKeyPairGenerator implements KeyPairOperations {
 				writePublicKey(pgpPublicKey, new FileOutputStream(publicKeyFile.toFile()));
 			}
 
-			return pgpSecretKey.getKeyID();
+			return Long.toHexString(pgpSecretKey.getKeyID()).toUpperCase();
 		} catch (PGPException e) {
 			throw new PgpException(e);
 		}

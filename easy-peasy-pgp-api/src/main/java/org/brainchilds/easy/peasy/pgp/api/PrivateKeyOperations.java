@@ -12,5 +12,5 @@ public interface PrivateKeyOperations {
 
 	void sign(InputStream plainIn, OutputStream signedOut) throws IOException, PgpException;
 
-	void sign(long keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException;
+	void sign(String keyId, InputStream plainIn, OutputStream signedOut) throws IOException, PgpException;
 }

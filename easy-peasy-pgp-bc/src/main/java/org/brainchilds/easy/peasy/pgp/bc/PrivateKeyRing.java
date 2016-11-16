@@ -54,6 +54,10 @@ public class PrivateKeyRing {
 		throw new PgpException("Given key ring does not contain any private key");
 	}
 
+	public PGPSecretKey getSecretKeyById(String keyId) throws PgpException {
+		return getSecretKeyById(Long.parseUnsignedLong(keyId, 16));
+	}
+
 	public PGPSecretKey getSecretKeyById(long keyId) throws PgpException {
 		try {
 			return keyRingCollection.getSecretKey(keyId);
@@ -64,6 +68,10 @@ public class PrivateKeyRing {
 
 	public PGPPrivateKey getFirstPrivateKey() throws PgpException {
 		return extractPrivateKey(getFirstSecretKey());
+	}
+
+	public PGPPrivateKey getKeyById(String keyId) throws PgpException {
+		return getKeyById(Long.parseUnsignedLong(keyId, 16));
 	}
 
 	public PGPPrivateKey getKeyById(long keyId) throws PgpException {

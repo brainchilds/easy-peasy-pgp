@@ -1,4 +1,4 @@
-package org.brainchilds.easy.peasy.pgp.api.keys;
+package org.brainchilds.easy.peasy.pgp.api;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,7 +6,7 @@ import java.nio.file.Path;
 
 import org.brainchilds.easy.peasy.pgp.api.exceptions.PgpException;
 
-public interface PgpKeyPairGenerator {
+public interface KeyPairOperations {
 
 	public long createKeyPair(String userId, String password, OutputStream publicKeyOut, OutputStream privateKeyOut) throws IOException, PgpException;
 

@@ -10,7 +10,7 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.githup.brainchilds</groupId>
+			<groupId>org.brainchilds</groupId>
 			<artifactId>easy-peasy-pgp-api</artifactId>
 		</dependency>
 		<dependency>

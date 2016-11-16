@@ -11,17 +11,11 @@ import java.util.Arrays;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.Streams;
-import org.brainchilds.easy.peasy.pgp.bc.BcPgpKeyPairGenerator;
-import org.brainchilds.easy.peasy.pgp.bc.BcPgpPrivateKeyOperations;
-import org.brainchilds.easy.peasy.pgp.bc.BcPgpPublicKeyOperations;
-import org.brainchilds.easy.peasy.pgp.bc.PrivateKeyRing;
-import org.brainchilds.easy.peasy.pgp.bc.PublicKeyRing;
+import org.brainchilds.easy.peasy.pgp.api.PrivateKeyOperations;
+import org.brainchilds.easy.peasy.pgp.api.PublicKeyOperations;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import easy.peasy.pgp.api.PgpPrivateKeyOperations;
-import easy.peasy.pgp.api.PgpPublicKeyOperations;
 
 public class PgpOperationsTest {
 
@@ -44,8 +38,8 @@ public class PgpOperationsTest {
 		privateKeyOperations = new BcPgpPrivateKeyOperations(privateKeyRing);
 	}
 
-	private PgpPublicKeyOperations publicKeyOperations;
-	private PgpPrivateKeyOperations privateKeyOperations;
+	private PublicKeyOperations publicKeyOperations;
+	private PrivateKeyOperations privateKeyOperations;
 	private PublicKeyRing publicKeyRing;
 	private PrivateKeyRing privateKeyRing;
 

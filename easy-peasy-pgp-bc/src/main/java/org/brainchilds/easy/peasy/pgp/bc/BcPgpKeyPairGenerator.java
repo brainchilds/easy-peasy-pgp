@@ -37,12 +37,11 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
-
-import easy.peasy.pgp.api.exceptions.PgpException;
-import easy.peasy.pgp.api.keys.PgpKeyPairGenerator;
+import org.brainchilds.easy.peasy.pgp.api.KeyPairOperations;
+import org.brainchilds.easy.peasy.pgp.api.exceptions.PgpException;
 
 @Data
-public class BcPgpKeyPairGenerator implements PgpKeyPairGenerator {
+public class BcPgpKeyPairGenerator implements KeyPairOperations {
 	private final int keySize;
 	private final boolean asciiArmor;
 	@Getter(AccessLevel.NONE)

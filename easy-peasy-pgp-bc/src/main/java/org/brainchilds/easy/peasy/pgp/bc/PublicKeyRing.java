@@ -12,8 +12,7 @@ import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
-
-import easy.peasy.pgp.api.exceptions.PgpException;
+import org.brainchilds.easy.peasy.pgp.api.exceptions.PgpException;
 
 @Data
 public class PublicKeyRing {

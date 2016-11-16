@@ -45,12 +45,11 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import easy.peasy.pgp.bc.BcPgpKeyPairGenerator;
-import easy.peasy.pgp.bc.BcPgpPrivateKeyOperations;
-import easy.peasy.pgp.bc.BcPgpPublicKeyOperations;
-import easy.peasy.pgp.bc.PrivateKeyRing;
-import easy.peasy.pgp.bc.PublicKeyRing;
+import org.brainchilds.easy.peasy.pgp.bc.BcPgpKeyPairGenerator;
+import org.brainchilds.easy.peasy.pgp.bc.BcPgpPrivateKeyOperations;
+import org.brainchilds.easy.peasy.pgp.bc.BcPgpPublicKeyOperations;
+import org.brainchilds.easy.peasy.pgp.bc.PrivateKeyRing;
+import org.brainchilds.easy.peasy.pgp.bc.PublicKeyRing;
 
 class CommandLineHandler {
 

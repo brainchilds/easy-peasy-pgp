@@ -29,13 +29,12 @@ import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
 import org.bouncycastle.util.io.Streams;
-
-import easy.peasy.pgp.api.PgpPrivateKeyOperations;
-import easy.peasy.pgp.api.exceptions.PgpException;
+import org.brainchilds.easy.peasy.pgp.api.PrivateKeyOperations;
+import org.brainchilds.easy.peasy.pgp.api.exceptions.PgpException;
 
 @Data
 @Builder
-public class BcPgpPrivateKeyOperations implements PgpPrivateKeyOperations {
+public class BcPgpPrivateKeyOperations implements PrivateKeyOperations {
 
 	private final PrivateKeyRing keyRing;
 	private final Boolean asciiArmor;

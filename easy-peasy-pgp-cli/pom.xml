@@ -9,7 +9,7 @@
 	<artifactId>easy-peasy-pgp-cli</artifactId>
 
 	<properties>
-		<java.main.class>easy.peasy.pgp.cli.Main</java.main.class>
+		<java.main.class>org.brainchilds.easy.peasy.pgp.cli.Main</java.main.class>
 	</properties>
 
 	<dependencies>
